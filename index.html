@@ -3,130 +3,129 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>A-Z Video Downloader</title>
+  <title>A2Z Video Downloader</title>
+
   <style>
-    * {
-      box-sizing: border-box;
-    }
     body {
-      background: #0f172a;
-      color: #e2e8f0;
       font-family: "Poppins", sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color: white;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100vh;
-      margin: 0;
+      min-height: 100vh;
       text-align: center;
+      margin: 0;
+      padding: 20px;
     }
+
     h1 {
-      font-size: 2rem;
-      color: #38bdf8;
-      margin-bottom: 10px;
+      font-size: 2em;
+      margin-bottom: 20px;
     }
-    p {
-      font-size: 0.9rem;
-      color: #94a3b8;
-      margin-top: 0;
-    }
+
     input {
-      width: 320px;
-      padding: 10px;
-      border-radius: 8px;
+      width: 80%;
+      max-width: 500px;
+      padding: 12px;
       border: none;
+      border-radius: 10px;
+      font-size: 1em;
+      margin-bottom: 15px;
       outline: none;
-      font-size: 1rem;
-      margin: 10px 0;
     }
+
     button {
-      padding: 10px 20px;
-      background: #38bdf8;
-      color: #0f172a;
+      background-color: #00b894;
+      color: white;
       border: none;
-      border-radius: 8px;
+      padding: 12px 30px;
+      border-radius: 10px;
+      font-size: 1em;
       cursor: pointer;
-      font-weight: bold;
-      transition: 0.2s;
+      transition: background 0.3s ease;
     }
+
     button:hover {
-      background: #0ea5e9;
+      background-color: #019875;
     }
-    .msg {
-      margin-top: 15px;
-      font-size: 0.9rem;
-      color: #94a3b8;
-      min-height: 20px;
+
+    #response {
+      margin-top: 25px;
+      font-size: 1.1em;
+      color: #f1f1f1;
+      word-wrap: break-word;
     }
-    .loader {
-      display: none;
-      margin-top: 20px;
-      border: 3px solid #1e293b;
-      border-top: 3px solid #38bdf8;
-      border-radius: 50%;
-      width: 25px;
-      height: 25px;
-      animation: spin 1s linear infinite;
+
+    a {
+      color: #00cec9;
+      text-decoration: none;
+      font-weight: bold;
     }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .footer {
+      margin-top: 40px;
+      font-size: 0.9em;
+      opacity: 0.7;
     }
   </style>
 </head>
 <body>
-  <h1>🚀 A-Z Video Downloader</h1>
-  <p>Paste a video link below and start your download</p>
-  
-  <input type="text" id="url" placeholder="https://example.com/video" />
+  <h1>🎥 A2Z Video Downloader</h1>
+
+  <input id="videoUrl" type="text" placeholder="Paste any video link here..." />
+  <br />
   <button onclick="downloadVideo()">Download</button>
-  <div class="loader" id="loader"></div>
-  <div class="msg" id="message"></div>
+
+  <div id="response"></div>
+
+  <div class="footer">
+    Powered by <b>A2Z Downloader</b> | All rights reserved
+  </div>
 
   <script>
-    const backendURL = "https://video-downloader-ukv5.onrender.com/";
-
     async function downloadVideo() {
-      const url = document.getElementById("url").value.trim();
-      const msg = document.getElementById("message");
-      const loader = document.getElementById("loader");
+      const inputUrl = document.getElementById("videoUrl").value.trim();
+      const responseBox = document.getElementById("response");
 
-      msg.textContent = "";
-      if (!url) {
-        msg.textContent = "⚠️ Please enter a valid URL.";
+      if (!inputUrl) {
+        responseBox.innerText = "❌ Please enter a video URL.";
         return;
       }
 
-      loader.style.display = "block";
-      msg.textContent = "⏳ Fetching your video, please wait...";
+      responseBox.innerText = "⏳ Processing your request...";
 
       try {
-        const response = await fetch(backendURL, {
+        const res = await fetch("https://video-downloader-ukv5.onrender.com/download", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url })
+          body: JSON.stringify({ url: inputUrl })
         });
 
-        loader.style.display = "none";
-
-        if (!response.ok) {
-          msg.textContent = "❌ Failed to download. Try another link.";
+        if (!res.ok) {
+          responseBox.innerText = `⚠️ Server responded with status ${res.status}`;
           return;
         }
 
-        const blob = await response.blob();
-        const a = document.createElement("a");
-        const blobUrl = URL.createObjectURL(blob);
-        a.href = blobUrl;
-        a.download = "video.mp4";
-        a.click();
-        URL.revokeObjectURL(blobUrl);
+        const data = await res.json();
 
-        msg.textContent = "✅ Download started!";
-      } catch (err) {
-        loader.style.display = "none";
-        msg.textContent = "⚠️ Could not connect to server.";
-        console.error("Error:", err);
+        if (data.error) {
+          responseBox.innerText = "🚫 Error: " + data.error;
+        } else if (data.url) {
+          responseBox.innerHTML = `
+            ✅ <b>${data.title || "Video Ready"}</b><br><br>
+            <a href="${data.url}" target="_blank">Click here to download</a>
+          `;
+        } else {
+          responseBox.innerText = "⚠️ No valid response from server.";
+        }
+      } catch (error) {
+        responseBox.innerText = "❌ Could not connect to the server.";
       }
     }
   </script>
